@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include "User_Setup.h"
 #include "Wire.h"
 
 const int MPU_addtess=0x68 //12C address of the IMU
