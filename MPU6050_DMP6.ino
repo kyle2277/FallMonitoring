@@ -97,14 +97,14 @@ MPU6050 mpu;
 // from the FIFO. Note this also requires gravity vector calculations.
 // Also note that yaw/pitch/roll angles suffer from gimbal lock (for
 // more info, see: http://en.wikipedia.org/wiki/Gimbal_lock)
-#define OUTPUT_READABLE_YAWPITCHROLL
+//#define OUTPUT_READABLE_YAWPITCHROLL
 
 // uncomment "OUTPUT_READABLE_REALACCEL" if you want to see acceleration
 // components with gravity removed. This acceleration reference frame is
 // not compensated for orientation, so +X is always +X according to the
 // sensor, just without the effects of gravity. If you want acceleration
 // compensated for orientation, us OUTPUT_READABLE_WORLDACCEL instead.
-//#define OUTPUT_READABLE_REALACCEL
+#define OUTPUT_READABLE_REALACCEL
 
 // uncomment "OUTPUT_READABLE_WORLDACCEL" if you want to see acceleration
 // components with gravity removed and adjusted for the world frame of
@@ -310,29 +310,54 @@ void loop() {
 
 #ifdef OUTPUT_READABLE_YAWPITCHROLL
         // display Euler angles in degrees
-        mpu.dmpGetQuaternion(&q, fifoBuffer);
-        mpu.dmpGetGravity(&gravity, &q);
-        mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
-        Serial.print("ypr\t");
-        Serial.print(ypr[0] * 180/M_PI);
-        Serial.print("\t");
-        Serial.print(ypr[1] * 180/M_PI);
-        Serial.print("\t");
-        Serial.println(ypr[2] * 180/M_PI);
+            mpu.dmpGetQuaternion(&q, fifoBuffer);
+            mpu.dmpGetGravity(&gravity, &q);
+            mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+            Serial.print("ypr\t");
+            Serial.print(ypr[0] * 180/M_PI);
+            Serial.print("\t");
+            Serial.print(ypr[1] * 180/M_PI);
+            Serial.print("\t");
+            Serial.println(ypr[2] * 180/M_PI);
 #endif
 
 #ifdef OUTPUT_READABLE_REALACCEL
         // display real acceleration, adjusted to remove gravity
-            mpu.dmpGetQuaternion(&q, fifoBuffer);
-            mpu.dmpGetAccel(&aa, fifoBuffer);
-            mpu.dmpGetGravity(&gravity, &q);
-            mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-            Serial.print("areal\t");
-            Serial.print(aaReal.x);
-            Serial.print("\t");
-            Serial.print(aaReal.y);
-            Serial.print("\t");
-            Serial.println(aaReal.z);
+        //32767 max val
+        //gravity = 4700
+        int x_Thresh=30000;
+        int y_Thresh=30000;
+        int z_Thresh=30000;
+        int something=0;
+        mpu.dmpGetQuaternion(&q, fifoBuffer);
+        mpu.dmpGetAccel(&aa, fifoBuffer);
+        mpu.dmpGetGravity(&gravity, &q);
+        mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+
+        float cubeRoots = cbrt(abs(aaReal.x)) + cbrt(abs(aaReal.y)) + cbrt(abs(aaReal.z));
+        Serial.println(cubeRoots);
+
+        //double composite = sqrt(abs((aaReal.x/1.0*aaReal.x) + (aaReal.y/1.0*aaReal.y) + (aaReal.z/1.0*aaReal.z)));
+        //Serial.println(composite);
+        /*
+        if (composite >= 15000.0) {
+          Serial.println("FALL");
+        }
+        if(abs(aaReal.x) >= x_Thresh) {
+          Serial.println("FALL MESSAGE X");
+        } else if(abs(aaReal.y) >= y_Thresh) {
+          Serial.println("FALL MESSAGE Y");
+        } else if (abs(aaReal.z -something) >= z_Thresh) {
+          Serial.println("FALL MESSAGE Z");
+        }
+
+        Serial.print("areal\t");
+        Serial.print(aaReal.x);
+        Serial.print("\t");
+        Serial.print(aaReal.y);
+        Serial.print("\t");
+        Serial.println(aaReal.z);
+        */
 #endif
 
 #ifdef OUTPUT_READABLE_WORLDACCEL
@@ -368,5 +393,7 @@ void loop() {
         // blink LED to indicate activity
         blinkState = !blinkState;
         digitalWrite(LED_PIN, blinkState);
+    } else {
+        Serial.println("Interrupted");
     }
 }
