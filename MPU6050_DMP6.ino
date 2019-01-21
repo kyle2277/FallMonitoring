@@ -45,7 +45,7 @@ THE SOFTWARE.
 // for both classes must be in the include path of your project
 #include "I2Cdev.h"
 
-#include "MPU6050_6Axis_MotionApps20.h"
+#include "MPU6050_6Axis_MotionApps20_ADAPT.h"
 //#include "MPU6050.h" // not necessary if using MotionApps include file
 
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
@@ -332,17 +332,38 @@ void loop() {
         mpu.dmpGetQuaternion(&q, fifoBuffer);
         mpu.dmpGetAccel(&aa, fifoBuffer);
         mpu.dmpGetGravity(&gravity, &q);
+
         mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
 
-        float cubeRoots = cbrt(abs(aaReal.x)) + cbrt(abs(aaReal.y)) + cbrt(abs(aaReal.z));
-        Serial.println(cubeRoots);
 
-        //double composite = sqrt(abs((aaReal.x/1.0*aaReal.x) + (aaReal.y/1.0*aaReal.y) + (aaReal.z/1.0*aaReal.z)));
-        //Serial.println(composite);
+        //gravity in G's
+        Serial.print("\t");
+        Serial.print(aaReal.x);
+        Serial.print("\t");
+        Serial.print(aaReal.y);
+        Serial.print("\t");
+        Serial.println(aaReal.z);
         /*
+        //gravity in DMP FIFO packet units
+        Serial.print("\t");
+        Serial.print(gravity.x*8192);
+        Serial.print("\t");
+        Serial.print(gravity.y*8192);
+        Serial.print("\t");
+        Serial.println(gravity.z*8192);
+        */
+        //float cubeRoots = cbrt(abs(aaReal.x)) + cbrt(abs(aaReal.y)) + cbrt(abs(aaReal.z));
+        //Serial.println(cubeRoots);
+
+        /*
+        double composite = sqrt(abs((aaReal.x/1.0*aaReal.x) + (aaReal.y/1.0*aaReal.y) + (aaReal.z/1.0*aaReal.z)));
+        Serial.println(composite);
+
         if (composite >= 15000.0) {
           Serial.println("FALL");
         }
+        */
+        /*
         if(abs(aaReal.x) >= x_Thresh) {
           Serial.println("FALL MESSAGE X");
         } else if(abs(aaReal.y) >= y_Thresh) {
