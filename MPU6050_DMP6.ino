@@ -333,6 +333,8 @@ void loop() {
         mpu.dmpGetAccel(&aa, fifoBuffer);
         mpu.dmpGetGravity(&gravity, &q);
 
+        mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+
         mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
 
 
@@ -343,6 +345,30 @@ void loop() {
         Serial.print(aaReal.y);
         Serial.print("\t");
         Serial.println(aaReal.z);
+
+        int totalAccThreshold = 10000;
+        int zAccThreshold = 8000;
+        float totalPitchRollThresholdDegrees = 90;
+        float totalPitchRollThresholdRad = totalPitchRollThresholdDegrees * M_PI/180;
+        float yawDiscardThresholdDegrees = 180;
+        float yawDiscardThresholdRad = yawDiscardThresholdDegrees * M_PI/180;
+
+        float totalAcc = sqrt(aaReal.x * aaReal.x + aaReal.y * aaReal.y + aaReal.z * aaReal.z);
+        if(totalAcc > totalAccThreshold){
+            int zAcc = abs(aaReal.z);
+            if(zAcc > zAccThreshold){
+                float pitch = ypr[1];
+                float roll = ypr[2];
+                float totalPitchRoll = sqrt(pitch * pitch + roll * roll);
+                if(totalPitchRoll > totalPitchRollThreshold){
+                    float yaw = ypr[0];
+                    if(yaw < yawDiscardThresholdRad){
+                        Serial.println("FALL");
+                    }
+                }
+            }
+        }
+
         /*
         //gravity in DMP FIFO packet units
         Serial.print("\t");
