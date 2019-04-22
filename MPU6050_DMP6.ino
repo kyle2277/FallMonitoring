@@ -137,10 +137,22 @@ VectorInt16 aaWorld;    // [x, y, z]            world-frame accel sensor measure
 VectorFloat gravity;    // [x, y, z]            gravity vector
 float euler[3];         // [psi, theta, phi]    Euler angle container
 float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gravity vector
+//INITIALIZE ALGORITHM VARS
+int x_Thresh;
+int y_Thresh;
+int z_Thresh;
+//int something;
+int totalAccThreshold;
+int zAccThreshold;
+float totalPitchRollThresholdDegrees;
+float totalPitchRollThresholdRad;
+float yawDiscardThresholdDegrees;
+float yawDiscardThresholdRad;
+long totalAcc;
+
 
 // packet structure for InvenSense teapot demo
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
-
 
 
 // ================================================================
@@ -159,6 +171,18 @@ void dmpDataReady() {
 // ================================================================
 
 void setup() {
+
+    //INITIALIZE ALGORITHM VARS
+    x_Thresh=10000;
+    y_Thresh=10000;
+    z_Thresh=10000;
+    //something=0;
+    totalAccThreshold = 10000;
+    zAccThreshold = 8000;
+    totalPitchRollThresholdDegrees = 90;
+    yawDiscardThresholdDegrees = 180;
+
+
     // join I2C bus (I2Cdev library doesn't do this automatically)
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
     Wire.begin();
@@ -188,10 +212,10 @@ void setup() {
     Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
 
     // wait for ready
-    Serial.println(F("\nSend any character to begin DMP programming and demo: "));
-    while (Serial.available() && Serial.read()); // empty buffer
-    while (!Serial.available());                 // wait for data
-    while (Serial.available() && Serial.read()); // empty buffer again
+//    Serial.println(F("\nSend any character to begin DMP programming and demo: "));
+//    while (Serial.available() && Serial.read()); // empty buffer
+//    while (!Serial.available());                 // wait for data
+//    while (Serial.available() && Serial.read()); // empty buffer again
 
     // load and configure the DMP
     Serial.println(F("Initializing DMP..."));
@@ -325,59 +349,55 @@ void loop() {
         // display real acceleration, adjusted to remove gravity
         //32767 max val
         //gravity = 4700
-        int x_Thresh=30000;
-        int y_Thresh=30000;
-        int z_Thresh=30000;
-        int something=0;
         mpu.dmpGetQuaternion(&q, fifoBuffer);
         mpu.dmpGetAccel(&aa, fifoBuffer);
         mpu.dmpGetGravity(&gravity, &q);
 
-        mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+        //mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
         mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
 
 
-        //gravity in G's
-        Serial.print("\t");
-        Serial.print(aaReal.x);
-        Serial.print("\t");
-        Serial.print(aaReal.y);
-        Serial.print("\t");
-        Serial.println(aaReal.z);
+////        //gravity in G's
+//        Serial.print("\t");
+//        Serial.print(aaReal.x);
+//        Serial.print("\t");
+//        Serial.print(aaReal.y);
+//        Serial.print("\t");
+//        Serial.println(aaReal.z);
 
-        int totalAccThreshold = 10000;
-        int zAccThreshold = 8000;
-        float totalPitchRollThresholdDegrees = 90;
-        float totalPitchRollThresholdRad = totalPitchRollThresholdDegrees * M_PI/180;
-        float yawDiscardThresholdDegrees = 180;
-        float yawDiscardThresholdRad = yawDiscardThresholdDegrees * M_PI/180;
+        totalPitchRollThresholdRad = totalPitchRollThresholdDegrees * M_PI/180;
+        yawDiscardThresholdRad = yawDiscardThresholdDegrees * M_PI/180;
 
-        float totalAcc = sqrt(aaReal.x * aaReal.x + aaReal.y * aaReal.y + aaReal.z * aaReal.z);
+        int zAcc=0;
+        totalAcc = sqrt(((long)aaReal.x * aaReal.x) + ((long)aaReal.y * aaReal.y) + ((long)aaReal.z * aaReal.z));
         if(totalAcc > totalAccThreshold){
-            int zAcc = abs(aaReal.z);
+            //local y-axis is global z-axis
+            zAcc = abs(aaReal.y);
             if(zAcc > zAccThreshold){
+
+                /*
                 float pitch = ypr[1];
-                float roll = ypr[2];
-                float totalPitchRoll = sqrt(pitch * pitch + roll * roll);
-                if(totalPitchRoll > totalPitchRollThreshold){
-                    float yaw = ypr[0];
-                    if(yaw < yawDiscardThresholdRad){
-                        Serial.println("FALL");
-                    }
-                }
-            }
+//                float roll = ypr[2];
+//                float totalPitchRoll = sqrt(pitch * pitch + roll * roll);
+//                if(totalPitchRoll > totalPitchRollThresholdRad){
+//                    float yaw = ypr[0];
+//                    if(yaw < yawDiscardThresholdRad){
+//                        Serial.println("FALL FALL FALL FALL FALL");
+//                    }
+//                }
+
+          */}
         }
 
+        Serial.print("\t");
+        Serial.print(zAcc);
+        Serial.print("\t");
+        Serial.print(totalAcc);
+        Serial.print("\t");
+        Serial.println(totalAccThreshold);
+
         /*
-        //gravity in DMP FIFO packet units
-        Serial.print("\t");
-        Serial.print(gravity.x*8192);
-        Serial.print("\t");
-        Serial.print(gravity.y*8192);
-        Serial.print("\t");
-        Serial.println(gravity.z*8192);
-        */
         //float cubeRoots = cbrt(abs(aaReal.x)) + cbrt(abs(aaReal.y)) + cbrt(abs(aaReal.z));
         //Serial.println(cubeRoots);
 
