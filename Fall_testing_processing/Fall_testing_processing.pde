@@ -4,9 +4,9 @@ import java.util.*;
 //-------------------------------------------------------------------------------------------------
 //****** CONTROL PANEL ****************************************************************************
 //-------------------------------------------------------------------------------------------------
-public static final int SUBJECT_ID = 2;                                      //TEST SUBJECT ID HERE
+public static final int SUBJECT_ID = 15;                                      //TEST SUBJECT ID HERE
 public static final int MANUAL_TEST = -1;                                    //MANUALLY SPECIFY WHICH TEST TO USE (-1 for standard procedure)
-public static final int CALIBRATION_PERIOD = 1000;                          //CALIBRATION TIME IN MILLISECONDS
+public static final int CALIBRATION_PERIOD = 15000;                          //CALIBRATION TIME IN MILLISECONDS
 public static final Integer[] REDUNDANT_TESTS = new Integer[] {5,6,7,8,9};   //DICTIONARY ENTRY AT WHICH THE REDUNDANT TESTS BEGIN
 public static final int numRedundantTests = 2;                               //NUMBER OF TIMES TO RUN THE FALL TESTS
 //-------------------------------------------------------------------------------------------------
@@ -41,9 +41,9 @@ void setup() {
    String csv_path = "";
    if(MANUAL_TEST >= 0) {
      testNum = MANUAL_TEST;
-     csv_path = "/data/subject_" + SUBJECT_ID + "_" + m.get(MANUAL_TEST) + ".csv";
+     csv_path = "Data/subject_" + SUBJECT_ID + "_" + m.get(MANUAL_TEST) + ".csv";
    } else {
-     csv_path = "/data/subject_" + SUBJECT_ID + ".csv";
+     csv_path = "Data/subject_" + SUBJECT_ID + ".csv";
    }
    File f = new File(csv_path);
    if(f.exists()) {
