@@ -111,6 +111,7 @@ void printMax() {
   xMaxNeg = 0;
   yMaxNeg = 0;
   zMaxNeg = 0;
+  maxTotalAcc = 0;
 }
 
 void listen() {
