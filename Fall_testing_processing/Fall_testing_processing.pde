@@ -4,7 +4,7 @@ import java.util.*;
 //-------------------------------------------------------------------------------------------------
 //****** CONTROL PANEL ****************************************************************************
 //-------------------------------------------------------------------------------------------------
-public static final int SUBJECT_ID = 15;                                      //TEST SUBJECT ID HERE
+public static final int SUBJECT_ID = 15;                                     //TEST SUBJECT ID HERE
 public static final int MANUAL_TEST = -1;                                    //MANUALLY SPECIFY WHICH TEST TO USE (-1 for standard procedure)
 public static final int CALIBRATION_PERIOD = 15000;                          //CALIBRATION TIME IN MILLISECONDS
 public static final Integer[] REDUNDANT_TESTS = new Integer[] {5,6,7,8,9};   //DICTIONARY ENTRY AT WHICH THE REDUNDANT TESTS BEGIN
@@ -34,7 +34,7 @@ void setup() {
   int indent = 25;
   text("Elderly Fall Monitoring Testing Utility\n", indent, 40);
   text("Controls:\n\n'S' - start recording data\n'Q' - Stop recording data\n'enter' - Force terminate program.", indent, 80);
-  
+  initDict();
    m = new HashMap<Integer, String>();
    redundant = Arrays.asList(REDUNDANT_TESTS);
    arduino = new Serial(this, "/dev/ttyACM0", 115200);
@@ -52,7 +52,6 @@ void setup() {
      println("Program termination.");
      exit();
    } else {
-     initDict();
      calibrate();
      csv_output = createWriter(csv_path);
      csv_output.print("Subject ID:," + SUBJECT_ID + "\n");
