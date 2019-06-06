@@ -141,7 +141,6 @@ float ypr[3];           // [yaw, pitch, roll]   yaw/pitch/roll container and gra
 int x_Thresh;
 int y_Thresh;
 int z_Thresh;
-//int something;
 int totalAccThreshold;
 int zAccThreshold;
 float totalPitchRollThresholdDegrees;
@@ -149,7 +148,16 @@ float totalPitchRollThresholdRad;
 float yawDiscardThresholdDegrees;
 float yawDiscardThresholdRad;
 long totalAcc;
-
+long totalAccLast;
+int dataPointsUnder;
+int minTriggers;
+int triggerCount;
+int pointsUnderThresh;
+int minTotalAcc;
+int xMax;
+int yMax;
+int zMax;
+int totalAccMax;
 
 // packet structure for InvenSense teapot demo
 uint8_t teapotPacket[14] = { '$', 0x02, 0,0, 0,0, 0,0, 0,0, 0x00, 0x00, '\r', '\n' };
@@ -176,11 +184,22 @@ void setup() {
     x_Thresh=10000;
     y_Thresh=10000;
     z_Thresh=10000;
+    totalAccLast = 0;
+    minTriggers = 10;
+    triggerCount = 0;
+    xMax = 0;
+    yMax = 0;
+    zMax = 0;
+    totalAccMax = 0;
+    pointsUnderThresh = 20;
+    dataPointsUnder = 0;
+    minTotalAcc = 5000;
     //something=0;
-    totalAccThreshold = 10000;  
+    totalAccThreshold = 9000;  
     zAccThreshold = 8000;
     totalPitchRollThresholdDegrees = 90;
     yawDiscardThresholdDegrees = 180;
+    
     
   
     // join I2C bus (I2Cdev library doesn't do this automatically)
@@ -204,12 +223,13 @@ void setup() {
     // crystal solution for the UART timer.
 
     // initialize device
-    Serial.println(F("Initializing I2C devices..."));
+    //Serial.println(F("Initializing I2C devices..."));
     mpu.initialize();
 
     // verify connection
-    Serial.println(F("Testing device connections..."));
-    Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+    //Serial.println(F("Testing device connections..."));
+    //Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
+    mpu.testConnection();
 
     // wait for ready
 //    Serial.println(F("\nSend any character to begin DMP programming and demo: "));
@@ -218,7 +238,7 @@ void setup() {
 //    while (Serial.available() && Serial.read()); // empty buffer again
 
     // load and configure the DMP
-    Serial.println(F("Initializing DMP..."));
+    //Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
 
     // supply your own gyro offsets here, scaled for min sensitivity
@@ -230,16 +250,16 @@ void setup() {
     // make sure it worked (returns 0 if so)
     if (devStatus == 0) {
         // turn on the DMP, now that it's ready
-        Serial.println(F("Enabling DMP..."));
+        //Serial.println(F("Enabling DMP..."));
         mpu.setDMPEnabled(true);
 
         // enable Arduino interrupt detection
-        Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
+        //Serial.println(F("Enabling interrupt detection (Arduino external interrupt 0)..."));
         attachInterrupt(0, dmpDataReady, RISING);
         mpuIntStatus = mpu.getIntStatus();
 
         // set our DMP Ready flag so the main loop() function knows it's okay to use it
-        Serial.println(F("DMP ready! Waiting for first interrupt..."));
+        //Serial.println(F("DMP ready! Waiting for first interrupt..."));
         dmpReady = true;
 
         // get expected DMP packet size for later comparison
@@ -263,6 +283,20 @@ void setup() {
 // ================================================================
 // ===                    MAIN PROGRAM LOOP                     ===
 // ================================================================
+
+void resetMaxs() {
+  xMax = 0;
+  yMax = 0;
+  zMax = 0;
+  totalAccMax = 0;      
+}
+
+void testMaxs(long totalAcc, int globalX, int globalY, int globalZ) {
+  if(abs(globalX) > abs(xMax)) {xMax = globalX;}
+  if(abs(globalY) > abs(yMax)) {yMax = globalY;}
+  if(abs(globalZ) > abs(zMax)) {zMax = globalZ;}
+  if(totalAcc > totalAccMax) {totalAccMax = totalAcc;}
+}
 
 void loop() {
     // if programming failed, don't try to do anything
@@ -293,7 +327,7 @@ void loop() {
     if ((mpuIntStatus & 0x10) || fifoCount == 1024) {
         // reset so we can continue cleanly
         mpu.resetFIFO();
-        Serial.println(F("FIFO overflow!"));
+        //Serial.println(F("FIFO overflow!"));
 
         // otherwise, check for DMP data ready interrupt (this should happen frequently)
     } else if (mpuIntStatus & 0x02) {
@@ -319,45 +353,54 @@ void loop() {
 
         mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
 
+        int globalX = aaReal.y;
+        int globalY = aaReal.z;
+        int globalZ = aaReal.x;
 
         //gravity in G's
-        Serial.print("\t");
-        Serial.print(aaReal.x); //global z
-        Serial.print("\t");
-        Serial.print(aaReal.y); //global x
-        Serial.print("\t");
-        Serial.println(aaReal.z); //global y
+//        Serial.print("\t");
+//        Serial.print(aaReal.x); //global z
+//        Serial.print("\t");
+//        Serial.print(aaReal.y); //global x
+//        Serial.print("\t");
+//        Serial.println(aaReal.z); //global y
+//
+//        
+
 
         totalPitchRollThresholdRad = totalPitchRollThresholdDegrees * M_PI/180;
         yawDiscardThresholdRad = yawDiscardThresholdDegrees * M_PI/180;
-
-        int zAcc=0;
+        
+        int zAcc = 0;
         totalAcc = sqrt(((long)aaReal.x * aaReal.x) + ((long)aaReal.y * aaReal.y) + ((long)aaReal.z * aaReal.z));
-        if(totalAcc > totalAccThreshold){
-            //local y-axis is global z-axis
-            zAcc = abs(aaReal.y);
-            if(zAcc > zAccThreshold){
-                  Serial.println("Fall Fall Fall");
-                  /*
-                  float pitch = ypr[1];
-//                float roll = ypr[2];
-//                float totalPitchRoll = sqrt(pitch * pitch + roll * roll);
-//                if(totalPitchRoll > totalPitchRollThresholdRad){
-//                    float yaw = ypr[0];
-//                    if(yaw < yawDiscardThresholdRad){
-//                        Serial.println("FALL FALL FALL FALL FALL");
-//                    }
-//                }
-              
-            */}
+
+        if(totalAcc > minTotalAcc && dataPointsUnder < pointsUnderThresh) {
+          dataPointsUnder = 0;
+          triggerCount++;
+          testMaxs(totalAcc, globalX, globalY, globalZ);
+        } else if(dataPointsUnder < pointsUnderThresh) {
+          dataPointsUnder++;
+        } else if(dataPointsUnder >= pointsUnderThresh){
+          dataPointsUnder = 0;
+          triggerCount = 0;
+          resetMaxs();
+        }
+        if(totalAccMax > totalAccThreshold) {
+          
+          //Serial.print("\t");
+          //Serial.println(totalAcc);
+          if(triggerCount > minTriggers) {
+            //Serial.println("FALL");
+            Serial.print(xMax);
+            Serial.print(",");
+            Serial.print(yMax);
+            Serial.print(",");
+            Serial.print(zMax);
+            Serial.print("\n");
+          }
         }
 
-        //Serial.print("\t");
-        //Serial.print(zAcc);
-        //Serial.print("\t");
-        //Serial.print(totalAcc);
-        //Serial.print("\t");
-        //Serial.println(totalAccThreshold);
+        
         
         /*
         //float cubeRoots = cbrt(abs(aaReal.x)) + cbrt(abs(aaReal.y)) + cbrt(abs(aaReal.z));
@@ -393,6 +436,6 @@ void loop() {
         blinkState = !blinkState;
         digitalWrite(LED_PIN, blinkState);
     } else {
-        Serial.println("Interrupted");
+        //Serial.println("Interrupted");
     }
 }

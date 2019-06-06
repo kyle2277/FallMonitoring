@@ -4,9 +4,9 @@ import java.util.*;
 //----------------------------------------------------------------------
 //**************  CONTROL PANEL  ***************************************
 //----------------------------------------------------------------------
-public static final int CALIBRATION_PERIOD = 1000;  //CALIBRATION TIME IN MILLISECONDS
+public static final int CALIBRATION_PERIOD = 10000;  //CALIBRATION TIME IN MILLISECONDS
 public static final String port = "/dev/ttyACM0";    //ARDUINO SERIAL CONNECTION PORT
-public static final String loadingIcon = "|";        //ICON USED FOR LOADING BAR
+public static final String loadingIcon = "#";        //ICON USED FOR LOADING BAR
 //----------------------------------------------------------------------
 //**********************************************************************
 //----------------------------------------------------------------------
@@ -37,6 +37,12 @@ public double zMax = 0;
 
 void setup() {
   arduino = new Serial(this, port, 115200);
+  //arduino.clear();
+  //try {
+  //  arduino = new Serial(this, port + "0", 115200);
+  //} catch (RuntimeException e) {
+  //  arduino = new Serial(this, port + "1", 115200); 
+  //}
   size(800,500);
   background(51);
   timerStart = millis();
@@ -57,6 +63,7 @@ void draw() {
     } 
   } else {
     showFall(); 
+    //arduino.clear();
   }
 }
 
@@ -67,6 +74,7 @@ void keyPressed() {
       xMax = 0;
       yMax = 0;
       zMax = 0;
+      arduino.clear();
     }
   } else if (key == '\n') {
     exit(); 
@@ -94,14 +102,19 @@ void showFall() {
 void serialEvent(Serial arduino) {
   if(keyStatus == 2) {
     String output = arduino.readStringUntil('\n');
+    //println(output);
     if(output != null) {
       String[] strArr = output.split(",");
       try {
         xMax = (Double.valueOf(strArr[0]) / 16384) * 9.81;
         yMax = (Double.valueOf(strArr[1]) / 16384) * 9.81;
         zMax = (Double.valueOf(strArr[2]) / 16384) * 9.81;
+        //println(xMax);
+        //println(yMax);
+        //println(zMax);
         keyStatus = 3;
-      } catch(ArrayIndexOutOfBoundsException e) {
+        
+     } catch(ArrayIndexOutOfBoundsException e) {
         keyStatus = 1;
       }
     }  
@@ -113,10 +126,10 @@ void calibrate() {
   background(50);
   textSize(26);
   text("Welcome to UW HuskyADAPT build team:\nElderly Fall Monitoring", 45,100);
-  textSize(20);
+  textSize(20);  
   text("By Kyle Won", 45, 200);
   textSize(18);
-  text("DO NOT PRESS ANY KEYS,  CALIBRATING\nPlease wait " + CALIBRATION_PERIOD/1000 + " seconds...", 45, 300);
+  text("PLACE DEVICE ON LEVEL SURFACE FOR CALIBRATION\nPlease wait " + CALIBRATION_PERIOD/1000 + " seconds...", 45, 300);
   text(loadingBar, 45, 375);
   timerCur = millis();
   if(timerCur - timerLast > 500) { //interval between status icons
