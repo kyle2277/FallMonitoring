@@ -12,13 +12,12 @@ public static final String loadingIcon = "#";        //ICON USED FOR LOADING BAR
 //----------------------------------------------------------------------
 
 Serial arduino;
-public int keyStatus = 0;
+public int keyStatus = 1;
 public String loadingBar = "";
 
 
 /*
 Draw Status Key:
-0 = Standby
 1 = Calibrate
 2 = Listen for fall
 3 = Showing fall detected
@@ -46,7 +45,6 @@ void setup() {
   size(800,500);
   background(51);
   timerStart = millis();
-  keyStatus = 1;
 }
 
 void draw() {
@@ -58,7 +56,7 @@ void draw() {
       } else {
         keyStatus = 2; 
       }
-    } else if(keyStatus == 2) {
+    } else { //key == 2
       listen();
     } 
   } else {

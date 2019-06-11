@@ -353,9 +353,9 @@ void loop() {
 
         mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
 
-        int globalX = aaReal.y;
+        int globalZ = aaReal.y;
         int globalY = aaReal.z;
-        int globalZ = aaReal.x;
+        int globalX = aaReal.x;
 
         //gravity in G's
 //        Serial.print("\t");
@@ -365,9 +365,7 @@ void loop() {
 //        Serial.print("\t");
 //        Serial.println(aaReal.z); //global y
 //
-//        
-
-
+         
         totalPitchRollThresholdRad = totalPitchRollThresholdDegrees * M_PI/180;
         yawDiscardThresholdRad = yawDiscardThresholdDegrees * M_PI/180;
         
